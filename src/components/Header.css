@@ -24,3 +24,5 @@
   cursor: pointer;
 }
 .site-header nav button:hover { background: #2d3342; }
+.site-header { transition: transform 0.25s ease; }
+.site-header.hidden { transform: translateY(-100%); }

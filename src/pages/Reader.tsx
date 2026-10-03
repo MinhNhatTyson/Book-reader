@@ -19,6 +19,7 @@ export default function Reader() {
   const [chapterIdx, setChapterIdx] = useState(0)
   const ratioRef = useRef(0)
   const saveTimer = useRef<number | undefined>(undefined)
+  const pendingRef = useRef<{ chapter: number; ratio: number } | null>(null)
 
   // Load the book + its text once (not live, so progress saves don't reload 10 MB)
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function Reader() {
       if (cancelled) return
       if (b) {
         localStorage.setItem('last-read', String(b.id))
+        db.books.update(b.id, { lastReadAt: Date.now() })
         ratioRef.current = b.progress?.ratio ?? 0
         setChapterIdx(b.progress?.chapter ?? 0)
       }
@@ -61,15 +63,22 @@ export default function Reader() {
     return lines[0] === chapter.title ? lines.slice(1) : lines
   }, [text, chapter])
 
+    const flushProgress = useCallback(() => {
+    window.clearTimeout(saveTimer.current)
+    const p = pendingRef.current
+    if (!p) return
+    pendingRef.current = null
+    db.books.update(bookId, { progress: p, lastReadAt: Date.now() })
+  }, [bookId])
+
   const saveProgress = useCallback(
     (ratio: number) => {
       ratioRef.current = ratio
+      pendingRef.current = { chapter: chapterIdx, ratio }
       window.clearTimeout(saveTimer.current)
-      saveTimer.current = window.setTimeout(() => {
-        db.books.update(bookId, { progress: { chapter: chapterIdx, ratio } })
-      }, 400)
+      saveTimer.current = window.setTimeout(flushProgress, 400)
     },
-    [bookId, chapterIdx],
+    [chapterIdx, flushProgress],
   )
 
   const goChapter = useCallback(
@@ -77,13 +86,23 @@ export default function Reader() {
       const total = book?.chapters?.length ?? 0
       if (n < 0 || n >= total) return
       window.clearTimeout(saveTimer.current)
+      pendingRef.current = null
       ratioRef.current = ratio
       setChapterIdx(n)
-      db.books.update(bookId, { progress: { chapter: n, ratio } })
+      db.books.update(bookId, { progress: { chapter: n, ratio }, lastReadAt: Date.now() })
       setUI({ chaptersOpen: false })
     },
     [book, bookId],
   )
+
+    // Save any pending progress when leaving the page or the reader
+  useEffect(() => {
+    window.addEventListener('pagehide', flushProgress)
+    return () => {
+      window.removeEventListener('pagehide', flushProgress)
+      flushProgress()
+    }
+  }, [flushProgress])
 
   if (book === undefined) return <main className="page">Loading…</main>
   if (book === null) return <main className="page">Book not found.</main>

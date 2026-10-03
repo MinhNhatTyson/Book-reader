@@ -14,6 +14,7 @@ export interface Book {
   encoding?: string
   chapters?: Chapter[]
   progress?: { chapter: number; ratio: number }
+  lastReadAt?: number
 }
 
 export interface BookText {
@@ -34,4 +35,5 @@ export async function deleteBook(id: number) {
     await db.books.delete(id)
     await db.texts.delete(id)
   })
+  if (localStorage.getItem('last-read') === String(id)) localStorage.removeItem('last-read')
 }

@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect } from 'react'
 import ChapterText from './ChapterText'
+import { useAutoHideHeader } from '../lib/useAutoHideHeader'
+import { toggleHeader } from '../lib/uiStore'
 
 export interface ViewProps {
   title: string
@@ -11,7 +13,12 @@ export interface ViewProps {
 }
 
 export default function ScrollView({ title, paragraphs, initialRatio, onRatio, onPrev, onNext }: ViewProps) {
-  // Restore position once when this chapter is shown
+  useAutoHideHeader()
+  const onTap = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return
+    if (window.getSelection()?.toString()) return // user is selecting text
+    toggleHeader()
+  }
   useLayoutEffect(() => {
     const max = document.documentElement.scrollHeight - window.innerHeight
     window.scrollTo(0, Math.max(0, max * initialRatio))
@@ -38,7 +45,7 @@ export default function ScrollView({ title, paragraphs, initialRatio, onRatio, o
   }, [onPrev, onNext])
 
   return (
-    <article className="text-flow scroll-view">
+    <article className="text-flow scroll-view" onClick={onTap}>
       <ChapterText title={title} paragraphs={paragraphs} />
       <div className="chapter-nav">
         <button disabled={!onPrev} onClick={() => onPrev?.(0)}>← Previous</button>

@@ -4,7 +4,8 @@
   color: var(--fg);
   transition: background 0.2s, color 0.2s;
 }
-.reader-progress { height: 3px; background: var(--border); position: sticky; top: 56px; z-index: 5; }
+.reader-progress { height: 3px; background: var(--border); position: sticky; top: 56px; z-index: 5; transition: top 0.25s ease; }
+body:has(.site-header.hidden) .reader-progress { top: 0; }
 .reader-progress > div { height: 100%; background: #e5833a; transition: width 0.3s; }
 
 /* Typography shared by both modes */
