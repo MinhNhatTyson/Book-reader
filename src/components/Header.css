@@ -1,0 +1,26 @@
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  background: #1f2430;
+  color: #fff;
+}
+.site-header .brand { font-weight: 700; color: #fff; text-decoration: none; }
+.site-header nav { display: flex; gap: 20px; }
+.site-header nav a { color: #aab; text-decoration: none; }
+.site-header nav a.active, .site-header nav a:hover { color: #fff; }
+.site-header nav { align-items: center; }
+.site-header nav button {
+  background: none;
+  border: 1px solid #556;
+  color: #dde;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.site-header nav button:hover { background: #2d3342; }
