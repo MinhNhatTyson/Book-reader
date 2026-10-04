@@ -66,3 +66,21 @@ body:has(.site-header.hidden) .reader-progress { top: 0; }
   border: 1px solid var(--border); background: none; color: inherit;
 }
 .seg button.active { background: #e5833a; color: #fff; border-color: #e5833a; }
+/* Floating dock (shown only while the header is auto-hidden) */
+.reader-dock {
+  position: fixed; left: 50%; bottom: 20px; z-index: 15;
+  display: flex; gap: 4px; padding: 6px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--border);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  opacity: 0; visibility: hidden; transform: translate(-50%, 16px);
+  transition: opacity 0.2s, transform 0.2s, visibility 0s 0.2s;
+}
+.reader-dock.show {
+  opacity: 1; visibility: visible; transform: translate(-50%, 0);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.reader-dock button {
+  width: 44px; height: 40px; border: 0; border-radius: 999px;
+  background: none; color: var(--fg); font-size: 16px; cursor: pointer;
+}
+.reader-dock button:hover { background: rgba(128, 128, 128, 0.18); }

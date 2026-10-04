@@ -8,6 +8,7 @@ import SettingsPanel from '../components/SettingsPanel'
 import ScrollView from '../components/ScrollView'
 import PagedView from '../components/PagedView'
 import './Reader.css'
+import ReaderDock from '../components/ReaderDock'
 
 export default function Reader() {
   const { id } = useParams()
@@ -20,6 +21,9 @@ export default function Reader() {
   const ratioRef = useRef(0)
   const saveTimer = useRef<number | undefined>(undefined)
   const pendingRef = useRef<{ chapter: number; ratio: number } | null>(null)
+  const [leaving, setLeaving] = useState(false)
+  const switchingRef = useRef(false)
+  const switchTimer = useRef<number | undefined>(undefined)
 
   // Load the book + its text once (not live, so progress saves don't reload 10 MB)
   useEffect(() => {
@@ -73,6 +77,7 @@ export default function Reader() {
 
   const saveProgress = useCallback(
     (ratio: number) => {
+      if (switchingRef.current) return
       ratioRef.current = ratio
       pendingRef.current = { chapter: chapterIdx, ratio }
       window.clearTimeout(saveTimer.current)
@@ -84,13 +89,20 @@ export default function Reader() {
   const goChapter = useCallback(
     (n: number, ratio = 0) => {
       const total = book?.chapters?.length ?? 0
-      if (n < 0 || n >= total) return
+      if (n < 0 || n >= total || switchingRef.current) return
+      switchingRef.current = true
       window.clearTimeout(saveTimer.current)
       pendingRef.current = null
       ratioRef.current = ratio
-      setChapterIdx(n)
       db.books.update(bookId, { progress: { chapter: n, ratio }, lastReadAt: Date.now() })
       setUI({ chaptersOpen: false })
+
+      setLeaving(true) // fade the old chapter out...
+      switchTimer.current = window.setTimeout(() => {
+        setChapterIdx(n) // ...then swap; the new view fades in on mount
+        setLeaving(false)
+        switchingRef.current = false
+      }, 180)
     },
     [book, bookId],
   )
@@ -100,6 +112,7 @@ export default function Reader() {
     window.addEventListener('pagehide', flushProgress)
     return () => {
       window.removeEventListener('pagehide', flushProgress)
+      window.clearTimeout(switchTimer.current)
       flushProgress()
     }
   }, [flushProgress])
@@ -138,12 +151,15 @@ export default function Reader() {
         <div style={{ width: `${((chapterIdx + 1) / chapters.length) * 100}%` }} />
       </div>
 
-      {s.mode === 'scroll'
-        ? <ScrollView key={`s-${chapterIdx}`} {...viewProps} />
-        : <PagedView key={`p-${chapterIdx}`} {...viewProps} />}
+      <div className={`reader-view${leaving ? ' leaving' : ''}`}>
+        {s.mode === 'scroll'
+          ? <ScrollView key={`s-${chapterIdx}`} {...viewProps} />
+          : <PagedView key={`p-${chapterIdx}`} {...viewProps} />}
+      </div>
 
       <ChapterDrawer chapters={chapters} current={chapterIdx} onSelect={(i) => goChapter(i)} />
       <SettingsPanel />
+      <ReaderDock />
     </div>
   )
 }
