@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getLastSync, getToken, setToken, syncLibrary } from '../lib/sync'
 import './Sync.css'
+const PUBLIC_URL = 'https://book-reader.minhnhat0132.workers.dev'
 
 // Opening /sync#token=... (the "phone link") stores the token automatically
 function initialToken() {
@@ -40,7 +41,7 @@ export default function Sync() {
   }
 
   async function copyLink() {
-    await navigator.clipboard.writeText(`${location.origin}/sync#token=${getToken()}`)
+    await navigator.clipboard.writeText(`${PUBLIC_URL}/sync#token=${getToken()}`)
     setStatus('Phone link copied. Send it to your phone and open it there to connect.')
   }
 

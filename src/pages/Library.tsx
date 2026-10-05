@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { db, type Book } from '../lib/db'
 import { deleteEverywhere, syncLibrary, uploadBook } from '../lib/sync'
 import { parseFile } from '../lib/parseFile'
+import './Library.css'
 
 type Sort = 'recent' | 'title' | 'added'
 
