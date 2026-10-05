@@ -5,6 +5,7 @@ import './Header.css'
 // To add a new feature later: add one entry to this array.
 const links = [
   { to: '/', label: 'Library' },
+  { to: '/sync', label: 'Sync' },
 ]
 
 export default function Header() {

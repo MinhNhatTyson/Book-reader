@@ -15,6 +15,9 @@ export interface Book {
   chapters?: Chapter[]
   progress?: { chapter: number; ratio: number }
   lastReadAt?: number
+  remoteId?: string     // id of this book in the cloud
+  uploaded?: boolean    // true once text + chapters are in the cloud
+  progressAt?: number   // when `progress` last changed (used to pick the newest position)
 }
 
 export interface BookText {
@@ -29,6 +32,7 @@ export const db = new Dexie('notebook-reader') as Dexie & {
 
 db.version(1).stores({ books: '++id, title, createdAt' })
 db.version(2).stores({ books: '++id, title, createdAt', texts: 'id' })
+db.version(3).stores({ books: '++id, title, createdAt, remoteId', texts: 'id' })
 
 export async function deleteBook(id: number) {
   await db.transaction('rw', db.books, db.texts, async () => {

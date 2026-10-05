@@ -9,6 +9,7 @@ import ScrollView from '../components/ScrollView'
 import PagedView from '../components/PagedView'
 import './Reader.css'
 import ReaderDock from '../components/ReaderDock'
+import { adoptRemoteProgress, downloadText, flushRemoteProgress, queueProgress } from '../lib/sync'
 
 export default function Reader() {
   const { id } = useParams()
@@ -24,21 +25,39 @@ export default function Reader() {
   const [leaving, setLeaving] = useState(false)
   const switchingRef = useRef(false)
   const switchTimer = useRef<number | undefined>(undefined)
+  const [note, setNote] = useState('Loading…')
+  const remoteIdRef = useRef<string | undefined>(undefined)
 
   // Load the book + its text once (not live, so progress saves don't reload 10 MB)
   useEffect(() => {
     let cancelled = false
-    Promise.all([db.books.get(bookId), db.texts.get(bookId)]).then(([b, t]) => {
+    ;(async () => {
+      let b = await db.books.get(bookId)
       if (cancelled) return
-      if (b) {
-        localStorage.setItem('last-read', String(b.id))
-        db.books.update(b.id, { lastReadAt: Date.now() })
-        ratioRef.current = b.progress?.ratio ?? 0
-        setChapterIdx(b.progress?.chapter ?? 0)
+      if (!b) { setBook(null); return }
+      remoteIdRef.current = b.remoteId
+      b = await adoptRemoteProgress(b) // newer position from another device
+
+      let t = await db.texts.get(bookId)
+      if (!t && b.remoteId) {
+        setNote('Downloading from the cloud…')
+        try {
+          await downloadText(bookId)
+          t = await db.texts.get(bookId)
+        } catch {
+          if (!cancelled) setNote('Could not download this book. Check your connection and reload.')
+          return
+        }
       }
+      if (cancelled) return
+
+      localStorage.setItem('last-read', String(b.id))
+      db.books.update(b.id, { lastReadAt: Date.now() })
+      ratioRef.current = b.progress?.ratio ?? 0
+      setChapterIdx(b.progress?.chapter ?? 0)
       setText(t?.text ?? '')
-      setBook(b ?? null)
-    })
+      setBook(b)
+    })()
     return () => { cancelled = true }
   }, [bookId])
 
@@ -67,12 +86,14 @@ export default function Reader() {
     return lines[0] === chapter.title ? lines.slice(1) : lines
   }, [text, chapter])
 
-    const flushProgress = useCallback(() => {
+  const flushProgress = useCallback(() => {
     window.clearTimeout(saveTimer.current)
     const p = pendingRef.current
     if (!p) return
     pendingRef.current = null
-    db.books.update(bookId, { progress: p, lastReadAt: Date.now() })
+    const now = Date.now()
+    db.books.update(bookId, { progress: p, lastReadAt: now, progressAt: now })
+    queueProgress(remoteIdRef.current, p.chapter, p.ratio, now)
   }, [bookId])
 
   const saveProgress = useCallback(
@@ -94,7 +115,9 @@ export default function Reader() {
       window.clearTimeout(saveTimer.current)
       pendingRef.current = null
       ratioRef.current = ratio
-      db.books.update(bookId, { progress: { chapter: n, ratio }, lastReadAt: Date.now() })
+      const now = Date.now()
+      db.books.update(bookId, { progress: { chapter: n, ratio }, lastReadAt: now, progressAt: now })
+      queueProgress(remoteIdRef.current, n, ratio, now)
       setUI({ chaptersOpen: false })
 
       setLeaving(true) // fade the old chapter out...
@@ -109,15 +132,19 @@ export default function Reader() {
 
     // Save any pending progress when leaving the page or the reader
   useEffect(() => {
-    window.addEventListener('pagehide', flushProgress)
+    const onLeave = () => { flushProgress(); flushRemoteProgress() }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') onLeave() }
+    window.addEventListener('pagehide', onLeave)
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
-      window.removeEventListener('pagehide', flushProgress)
+      window.removeEventListener('pagehide', onLeave)
+      document.removeEventListener('visibilitychange', onVisibility)
       window.clearTimeout(switchTimer.current)
-      flushProgress()
+      onLeave()
     }
   }, [flushProgress])
 
-  if (book === undefined) return <main className="page">Loading…</main>
+  if (book === undefined) return <main className="page">{note}</main>
   if (book === null) return <main className="page">Book not found.</main>
   if (!book.chapters?.length || !text) {
     return (

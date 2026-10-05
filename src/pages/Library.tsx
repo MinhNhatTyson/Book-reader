@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Link } from 'react-router-dom'
-import { db, deleteBook, type Book } from '../lib/db'
+import { db, type Book } from '../lib/db'
+import { deleteEverywhere, syncLibrary, uploadBook } from '../lib/sync'
 import { parseFile } from '../lib/parseFile'
-import './Library.css'
 
 type Sort = 'recent' | 'title' | 'added'
 
@@ -33,6 +33,17 @@ export default function Library() {
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<Sort>('recent')
+  const localTexts = useLiveQuery(() => db.texts.toCollection().primaryKeys(), [])
+
+  // Sync when the Library opens and whenever the tab/app comes back to the foreground
+  useEffect(() => {
+    const run = () => {
+      if (document.visibilityState === 'visible') syncLibrary().catch(() => {})
+    }
+    run()
+    document.addEventListener('visibilitychange', run)
+    return () => document.removeEventListener('visibilitychange', run)
+  }, [])
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase()
@@ -54,16 +65,18 @@ export default function Library() {
       for (const file of files) {
         setBusy(file.name)
         const { text, encoding, chapters } = await parseFile(file)
+        let localId = 0
         await db.transaction('rw', db.books, db.texts, async () => {
-          const id = await db.books.add({
+          localId = await db.books.add({
             title: file.name.replace(/\.txt$/i, ''),
             size: file.size,
             createdAt: Date.now(),
             encoding,
             chapters,
           })
-          await db.texts.add({ id, text })
+          await db.texts.add({ id: localId, text })
         })
+        uploadBook(localId).catch(() => {}) // background; the next sync retries if it fails
       }
     } catch {
       setError('Could not read that file.')
@@ -73,8 +86,14 @@ export default function Library() {
     }
   }
 
-  function confirmDelete(b: Book) {
-    if (window.confirm(`Delete "${b.title}"? Its reading progress will be lost.`)) deleteBook(b.id)
+  async function confirmDelete(b: Book) {
+    const where = b.remoteId ? ' on all your devices' : ''
+    if (!window.confirm(`Delete "${b.title}"${where}? Its reading progress will be lost.`)) return
+    try {
+      await deleteEverywhere(b)
+    } catch {
+      setError('Could not delete from the cloud. Check your connection and try again.')
+    }
   }
 
   return (
@@ -103,6 +122,7 @@ export default function Library() {
           const f = fraction(b)
           const total = b.chapters?.length ?? 0
           const h = hue(b.title)
+          const cloudOnly = !!b.remoteId && !!localTexts && !localTexts.includes(b.id)
           return (
             <div className="card-wrap" key={b.id}>
               <Link to={`/read/${b.id}`} className="card" title={b.title}>
@@ -119,7 +139,7 @@ export default function Library() {
                     <span>{Math.floor(f * 100)}%</span>
                     <span>{b.progress ? `Ch. ${b.progress.chapter + 1} / ${total}` : `${total} chapters`}</span>
                   </div>
-                  <div className="meta-sub">{b.lastReadAt ? `Read ${timeAgo(b.lastReadAt)}` : 'Not started'}</div>
+                                    <div className="meta-sub">{cloudOnly ? '☁ In cloud · ' : ''}{b.lastReadAt ? `Read ${timeAgo(b.lastReadAt)}` : 'Not started'}</div>
                 </div>
               </Link>
               <button className="card-delete" aria-label={`Delete ${b.title}`} onClick={() => confirmDelete(b)}>×</button>

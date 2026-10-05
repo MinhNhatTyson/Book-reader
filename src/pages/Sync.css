@@ -1,0 +1,15 @@
+.sync h1 { margin: 8px 0 12px; }
+.sync p { color: #555; line-height: 1.5; }
+.sync input {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; margin: 8px 0 12px;
+  border-radius: 8px; border: 1px solid #d9d2c0; background: #fff; font: inherit;
+}
+.sync-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.sync button {
+  padding: 10px 18px; border-radius: 8px; border: 0; cursor: pointer;
+  background: #e5833a; color: #fff; font: inherit;
+}
+.sync button.secondary { background: none; border: 1px solid #c9bfa5; color: inherit; }
+.sync button:disabled { opacity: 0.5; cursor: default; }
+.sync .status { margin-top: 16px; }
+.sync .meta { color: #999; font-size: 13px; }
