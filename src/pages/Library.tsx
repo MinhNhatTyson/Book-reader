@@ -112,20 +112,20 @@ export default function Library() {
 
       {error && <p className="lib-error">{error}</p>}
 
-      <div className="shelf">
+      <div className={`shelf${books ? '' : ' loading'}`}>
         <label className="card-add">
           <input type="file" accept=".txt,text/plain" multiple hidden disabled={!!busy} onChange={handleUpload} />
           <span className="plus">+</span>
           <span>{busy ? `Analyzing ${busy}…` : 'Add .txt book'}</span>
         </label>
 
-        {shown.map((b) => {
+        {shown.map((b, i) => {
           const f = fraction(b)
           const total = b.chapters?.length ?? 0
           const h = hue(b.title)
           const cloudOnly = !!b.remoteId && !!localTexts && !localTexts.includes(b.id)
           return (
-            <div className="card-wrap" key={b.id}>
+            <div className="card-wrap" key={b.id} style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
               <Link to={`/read/${b.id}`} className="card" title={b.title}>
                 <div
                   className="cover"

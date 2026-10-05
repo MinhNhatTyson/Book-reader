@@ -1,4 +1,10 @@
-body { margin: 0; font-family: system-ui, sans-serif; background: #f6f3ec; color: #222; }
+html { background: var(--boot-bg, #f6f3ec); }
+body { margin: 0; font-family: system-ui, sans-serif; background: var(--boot-bg, #f6f3ec); color: #222; transition: background-color 0.25s ease, color 0.25s ease; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(8px); } }
+.page { animation: fade-up 0.3s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  .page, .card-wrap, .site-header { animation: none !important; }
+}
 .page { max-width: 900px; margin: 0 auto; padding: 24px; }
 html { -webkit-text-size-adjust: 100%; }
 button, a { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }

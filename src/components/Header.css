@@ -35,3 +35,6 @@
   .brand-text, .hide-sm { display: none; }
   .site-header nav button { min-height: 40px; padding: 6px 10px; }
 }
+
+@keyframes header-in { from { opacity: 0; } }
+.site-header { animation: header-in 0.3s ease both; }

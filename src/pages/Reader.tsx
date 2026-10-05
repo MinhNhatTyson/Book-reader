@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
 import { db, type Book } from '../lib/db'
 import { THEMES, useSettings } from '../lib/settings'
@@ -72,6 +72,21 @@ export default function Reader() {
       setUI({ chaptersOpen: false, settingsOpen: false })
     }
   }, [])
+
+  // Theme the whole page (not just .reader) so there is no flash or light overscroll
+  useLayoutEffect(() => {
+    const t = THEMES[s.theme]
+    const root = document.documentElement
+    root.style.background = t.bg
+    document.body.style.background = t.bg
+    document.body.style.color = t.fg
+    return () => {
+      root.style.background = ''
+      root.style.removeProperty('--boot-bg')
+      document.body.style.background = ''
+      document.body.style.color = ''
+    }
+  }, [s.theme])
 
   const chapter = book?.chapters?.[chapterIdx]
 

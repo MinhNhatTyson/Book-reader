@@ -11,12 +11,30 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Reader" />
     <title>notebook-reader</title>
+  <script>
+  // Paint the right background before React loads (Library = light, reader = your theme)
+  (function () {
+    var bg = '#f6f3ec';
+    try {
+      if (location.pathname.indexOf('/read/') === 0) {
+        var s = JSON.parse(localStorage.getItem('reader-settings') || '{}');
+        bg = { light: '#fafafa', sepia: '#f4ecd8', dark: '#121212' }[s.theme || 'sepia'] || bg;
+      }
+    } catch (e) {}
+    document.documentElement.style.setProperty('--boot-bg', bg);
+  })();
+</script>
+<style>
+  html { background: var(--boot-bg, #f6f3ec); }
+  .boot { display: flex; align-items: center; justify-content: center; height: 100vh; height: 100dvh; font-size: 48px; animation: boot-pulse 1.2s ease-in-out infinite; }
+  @keyframes boot-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 0.25; } }
+</style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&family=Literata:wght@400;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="boot">📖</div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
