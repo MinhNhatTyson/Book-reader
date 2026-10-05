@@ -1,2 +1,7 @@
 body { margin: 0; font-family: system-ui, sans-serif; background: #f6f3ec; color: #222; }
 .page { max-width: 900px; margin: 0 auto; padding: 24px; }
+html { -webkit-text-size-adjust: 100%; }
+button, a { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+@media (max-width: 640px) {
+  .page { padding: 16px; }
+}

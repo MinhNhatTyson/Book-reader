@@ -1,8 +1,33 @@
 {
-  "name": "book-reader",
-  "compatibility_date": "2026-10-01",
-  "assets": {
-    "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+	"name": "book-reader",
+	"main": "worker/index.ts",
+	"compatibility_date": "2026-10-01",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application",
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "notebook-reader",
+			"database_id": "1c368602-9188-42df-ba75-04ee62c87374"
+		},
+		{
+			"binding": "notebook_reader",
+			"database_name": "notebook-reader",
+			"database_id": "1c368602-9188-42df-ba75-04ee62c87374",
+			"remote": true
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "BOOKS",
+			"id": "cbd600ff1c8e4bed914ca77ff5fdf57b",
+			"remote": true
+		}
+	]
 }

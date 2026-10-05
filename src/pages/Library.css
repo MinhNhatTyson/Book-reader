@@ -46,3 +46,15 @@
 }
 .card-add:hover { border-color: #e5833a; color: #e5833a; }
 .card-add .plus { font-size: 40px; line-height: 1; }
+
+@media (max-width: 640px) {
+  .page.library { padding: 16px 14px; }
+  .library h1 { font-size: 24px; margin: 4px 0 14px; }
+  .lib-toolbar { gap: 8px; margin-bottom: 18px; }
+  .lib-toolbar select { max-width: 42%; }
+  .shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 14px; }
+  .cover { padding: 10px; }
+  .initial { font-size: 44px; }
+  .cover-title { font-size: 13px; }
+  .card-delete { width: 32px; height: 32px; }
+}

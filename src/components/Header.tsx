@@ -14,7 +14,7 @@ export default function Header() {
   const lastRead = localStorage.getItem('last-read')
   return (
     <header className={`site-header${headerHidden ? ' hidden' : ''}`}>
-      <NavLink to="/" className="brand">📖 Notebook Reader</NavLink>
+      <NavLink to="/" className="brand">📖 <span className="brand-text">Notebook Reader</span></NavLink>
       <nav>
         {links.map((l) => (
           <NavLink
@@ -26,11 +26,11 @@ export default function Header() {
             {l.label}
           </NavLink>
         ))}
-        {lastRead && !inReader && <NavLink to={`/read/${lastRead}`}>Continue reading</NavLink>}
+        {lastRead && !inReader && <NavLink to={`/read/${lastRead}`}>Continue<span className="hide-sm"> reading</span></NavLink>}
         {inReader && (
           <>
-            <button onClick={() => setUI({ chaptersOpen: true })}>☰ Chapters</button>
-            <button onClick={() => setUI({ settingsOpen: true })}>Aa Settings</button>
+            <button onClick={() => setUI({ chaptersOpen: true })} aria-label="Chapters">☰<span className="hide-sm"> Chapters</span></button>
+            <button onClick={() => setUI({ settingsOpen: true })} aria-label="Settings">Aa<span className="hide-sm"> Settings</span></button>
           </>
         )}
       </nav>

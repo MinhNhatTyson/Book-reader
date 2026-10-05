@@ -54,10 +54,31 @@ export default function PagedView({ title, paragraphs, initialRatio, onRatio, on
     return () => window.removeEventListener('keydown', onKey)
   }, [go, page])
 
+  const touchX = useRef<number | null>(null)
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchX.current = e.touches[0].clientX
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchX.current
+    touchX.current = null
+    if (Math.abs(dx) > 50) go(dx < 0 ? page + 1 : page - 1)
+  }
+  // Tap zones: left 30% = previous, right 30% = next (touch devices only)
+  const onTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!window.matchMedia('(pointer: coarse)').matches) return
+    if (window.getSelection()?.toString()) return
+    const r = e.currentTarget.getBoundingClientRect()
+    const x = (e.clientX - r.left) / r.width
+    if (x < 0.3) go(page - 1)
+    else if (x > 0.7) go(page + 1)
+  }
+
   return (
     <div className="paged">
       <button className="edge left" onClick={() => go(page - 1)} aria-label="Previous page">‹</button>
-      <div className="paged-viewport" ref={viewportRef}>
+      <div className="paged-viewport" ref={viewportRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={onTap}>
         <div
           ref={contentRef}
           className="paged-content text-flow"

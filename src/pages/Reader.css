@@ -1,5 +1,6 @@
 .reader {
   min-height: calc(100vh - 56px);
+  min-height: calc(100dvh - 56px);
   background: var(--bg);
   color: var(--fg);
   transition: background 0.2s, color 0.2s;
@@ -24,7 +25,13 @@ body:has(.site-header.hidden) .reader-progress { top: 0; }
 
 /* Paged mode: 100vh - header 56 - bar 3 - top padding 24 - footer 56 = 139 */
 .paged { position: relative; padding-top: 24px; }
-.paged-viewport { width: min(var(--width), calc(100% - 140px)); height: calc(100vh - 139px); margin: 0 auto; overflow: hidden; }
+.paged-viewport { 
+  width: min(var(--width), calc(100% - 140px)); 
+  height: calc(100vh - 139px); 
+  margin: 0 auto; 
+  overflow: hidden; 
+}
+.paged-viewport { height: calc(100dvh - 139px); }
 .paged-content { column-fill: auto; transition: transform 0.25s ease; }
 .paged-footer { height: 56px; line-height: 56px; text-align: center; color: var(--muted); font-size: 14px; }
 .edge {
@@ -98,4 +105,23 @@ body:has(.site-header.hidden) .reader-progress { top: 0; }
 @media (prefers-reduced-motion: reduce) {
   .scroll-view, .paged { animation: none; }
   .reader-view.leaving { transition: none; transform: none; }
+}
+
+.paged-viewport { touch-action: pan-y pinch-zoom; }
+
+@media (max-width: 640px) {
+  .scroll-view { padding: 24px 16px 96px; }
+  .chapter-nav { gap: 12px; }
+  .chapter-nav button { flex: 1; min-height: 48px; }
+
+  /* Paged mode: arrows are replaced by swipe / tap zones */
+  .paged-viewport { width: calc(100% - 32px); }
+  .edge { display: none; }
+
+  .drawer { width: 88vw; padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .drawer input[type='text'], .drawer select { font-size: 16px; padding: 10px; } /* 16px stops iOS zoom-on-focus */
+  .drawer-list button { padding: 12px 10px; }
+
+  .reader-dock { bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .reader-dock button { width: 48px; height: 44px; }
 }
