@@ -12,7 +12,19 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
   color: #fff;
 }
-.site-header .brand { font-weight: 700; color: #fff; text-decoration: none; }
+.site-header .brand { 
+  font-weight: 700; 
+  color: #fff; 
+  text-decoration: none; 
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand-icon {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
 .site-header nav { display: flex; gap: 20px; }
 .site-header nav a { color: #aab; text-decoration: none; }
 .site-header nav a.active, .site-header nav a:hover { color: #fff; }

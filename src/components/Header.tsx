@@ -15,7 +15,9 @@ export default function Header() {
   const lastRead = localStorage.getItem('last-read')
   return (
     <header className={`site-header${headerHidden ? ' hidden' : ''}`}>
-      <NavLink to="/" className="brand">📖 <span className="brand-text">Notebook Reader</span></NavLink>
+      <NavLink to="/" className="brand"> 
+        <img src="/favicon.svg" alt="" className="brand-icon" />
+       <span className="brand-text">Notebook Reader</span></NavLink>
       <nav>
         {links.map((l) => (
           <NavLink
