@@ -20,9 +20,9 @@
   align-items: center;
   gap: 8px;
 }
-.brand-icon {
-  width: 26px;
-  height: 26px;
+.site-header .brand-icon {
+  width: 28px;
+  height: 28px;
   flex: none;
 }
 .site-header nav { display: flex; gap: 20px; }

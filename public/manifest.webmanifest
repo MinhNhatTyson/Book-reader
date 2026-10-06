@@ -1,6 +1,6 @@
 {
-  "name": "Notebook Reader",
-  "short_name": "Reader",
+  "name": "Leaflight",
+  "short_name": "Leaflight",
   "description": "Read your own .txt novels with chapters, themes and cloud sync.",
   "start_url": "/",
   "scope": "/",
