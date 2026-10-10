@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS books (
   encoding TEXT,
   chapters TEXT NOT NULL DEFAULT '[]',
   chapter_count INTEGER NOT NULL DEFAULT 0,
+  chapters_at INTEGER NOT NULL DEFAULT 0,
   progress_chapter INTEGER,
   progress_ratio REAL,
   progress_at INTEGER,

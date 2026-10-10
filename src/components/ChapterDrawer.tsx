@@ -43,6 +43,9 @@ export default function ChapterDrawer({ chapters, current, onSelect }: Props) {
             </button>
           ))}
         </div>
+        <button className="reset" onClick={() => setUI({ chaptersOpen: false, resplitOpen: true })}>
+          Re-split chapters…
+        </button>
       </aside>
     </>
   )

@@ -1,75 +1,61 @@
-# React + TypeScript + Vite
+# Leaflight
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A personal reader for long `.txt` novels. Upload a raw text file and Leaflight splits it into chapters and shows it as readable paragraphs, in scroll or paged mode, with themes, fonts and sizes you control. The text itself is never modified; only how it is displayed changes.
 
-Currently, two official plugins are available:
+Built for one user (me). It is not a public service.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Automatic encoding detection (UTF-8, UTF-16, Windows-1258)
+- Chapter detection (Vietnamese and English headings), with a size-based fallback
+- Reader settings: theme (light / sepia / dark), font, size, line height, width, paragraph spacing
+- Scroll mode and paged mode (swipe and tap zones on touch devices)
+- Remembers reading position per book
+- Cloud sync across devices (Cloudflare D1 + KV), with offline-capable PWA shell
+- Local storage in IndexedDB; the cloud copy is optional
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech stack
 
-## Expanding the ESLint configuration
+React 19, TypeScript, Vite, React Router, Dexie (IndexedDB), Cloudflare Workers + D1 + KV.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Run locally
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+The dev server proxies `/api` to the deployed Worker (see `vite.config.ts`), so local development talks to the real cloud data.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Deploy (Cloudflare)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+One-time setup:
 
+```powershell
+npx wrangler d1 execute notebook-reader --remote --file=worker/schema.sql
+npx wrangler secret put API_TOKEN
 ```
+
+Then build and deploy:
+
+```powershell
+npm run build
+npx wrangler deploy
+```
+
+## Security notes
+
+- The API is protected by a single bearer token stored as the Cloudflare secret `API_TOKEN`. It is never committed to this repository.
+- Enter the token once per device on the Sync page. It is kept in that browser's `localStorage`.
+- To rotate it, run `npx wrangler secret put API_TOKEN` again and re-enter it on each device.
+
+## Project structure
+
+| Path | Purpose |
+|---|---|
+| `src/pages` | Library, Reader, Sync pages |
+| `src/components` | Header, reader views, drawers, settings |
+| `src/lib` | IndexedDB, settings, sync, UI state |
+| `src/workers/parser.worker.ts` | Encoding and chapter detection (Web Worker) |
+| `worker/` | Cloudflare Worker API and D1 schema |
+| `public/sw.js` | Service worker (offline app shell) |

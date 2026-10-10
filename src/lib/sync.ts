@@ -11,6 +11,7 @@ interface RemoteBook {
   createdAt: number
   encoding: string | null
   chapterCount: number
+  chaptersAt: number
   progress: { chapter: number; ratio: number } | null
   progressAt: number | null
 }
@@ -74,7 +75,7 @@ async function doUpload(localId: number) {
       encoding: b.encoding ?? null, chapterCount: b.chapters?.length ?? 0,
     }),
   })
-  await api(`/books/${remoteId}/chapters`, { method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(b.chapters ?? []) })
+  await api(`/books/${remoteId}/chapters?at=${b.chaptersAt ?? 0}`, { method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(b.chapters ?? []) })
   await api(`/books/${remoteId}/text`, { method: 'PUT', body: await gzip(t.text) }) // last: makes the book visible
   if (b.progress) {
     await putProgress(remoteId, b.progress.chapter, b.progress.ratio, b.progressAt ?? b.lastReadAt ?? b.createdAt)
@@ -89,17 +90,31 @@ async function doSync() {
   const byRemote = new Map(local.filter((b) => b.remoteId).map((b) => [b.remoteId!, b]))
   const remoteIds = new Set(remote.map((r) => r.id))
 
-  // 1. Books that exist in the cloud: add the new ones, reconcile reading position
+  // 1. Books that exist in the cloud: add the new ones, reconcile chapters, then reading position
   for (const r of remote) {
     const l = byRemote.get(r.id)
     if (!l) {
       const chapters: Chapter[] = await (await api(`/books/${r.id}/chapters`)).json()
       await db.books.add({
         title: r.title, size: r.size, createdAt: r.createdAt, encoding: r.encoding ?? undefined,
-        chapters, progress: r.progress ?? undefined, progressAt: r.progressAt ?? undefined,
+        chapters, chaptersAt: r.chaptersAt ?? 0, progress: r.progress ?? undefined, progressAt: r.progressAt ?? undefined,
         lastReadAt: r.progressAt ?? undefined, remoteId: r.id, uploaded: true,
       })
-    } else if ((r.progressAt ?? 0) > (l.progressAt ?? 0)) {
+      continue
+    }
+
+    const remoteAt = r.chaptersAt ?? 0
+    const localAt = l.chaptersAt ?? 0
+    if (remoteAt > localAt) {
+      const chapters: Chapter[] = await (await api(`/books/${r.id}/chapters`)).json()
+      await db.books.update(l.id, { chapters, chaptersAt: remoteAt })
+    } else if (localAt > remoteAt && l.uploaded) {
+      await api(`/books/${r.id}/chapters?at=${localAt}`, {
+        method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(l.chapters ?? []),
+      })
+    }
+
+    if ((r.progressAt ?? 0) > (l.progressAt ?? 0)) {
       await db.books.update(l.id, {
         progress: r.progress ?? undefined,
         progressAt: r.progressAt ?? undefined,

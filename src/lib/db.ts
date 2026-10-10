@@ -17,7 +17,8 @@ export interface Book {
   lastReadAt?: number
   remoteId?: string     // id of this book in the cloud
   uploaded?: boolean    // true once text + chapters are in the cloud
-  progressAt?: number   // when `progress` last changed (used to pick the newest position)
+  progressAt?: number
+  chaptersAt?: number
 }
 
 export interface BookText {

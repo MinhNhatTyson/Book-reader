@@ -125,3 +125,23 @@ body:has(.site-header.hidden) .reader-progress { top: 0; }
   .reader-dock { bottom: calc(16px + env(safe-area-inset-bottom)); }
   .reader-dock button { width: 48px; height: 44px; }
 }
+
+.drawer .hint { margin: 0; font-size: 12px; color: var(--muted); }
+.hit-chapter { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.hit-text { display: block; font-size: 14px; line-height: 1.4; }
+.hit-text mark { background: rgba(229, 131, 58, 0.35); color: inherit; border-radius: 2px; }
+
+/* Re-split panel */
+.drawer input[type='number'] {
+  padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+}
+.drawer code { font-size: 12px; background: rgba(128, 128, 128, 0.15); padding: 1px 4px; border-radius: 3px; }
+.preview-list { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+.primary {
+  padding: 10px; border-radius: 6px; border: 0; cursor: pointer;
+  background: #e5833a; color: #fff; font: inherit;
+}
+.primary:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 640px) {
+  .drawer input[type='number'] { font-size: 16px; padding: 10px; }
+}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
-import { db, type Book } from '../lib/db'
+import { db, type Book, type Chapter } from '../lib/db'
 import { THEMES, useSettings } from '../lib/settings'
 import { setUI } from '../lib/uiStore'
 import ChapterDrawer from '../components/ChapterDrawer'
@@ -9,7 +9,9 @@ import ScrollView from '../components/ScrollView'
 import PagedView from '../components/PagedView'
 import './Reader.css'
 import ReaderDock from '../components/ReaderDock'
-import { adoptRemoteProgress, downloadText, flushRemoteProgress, queueProgress } from '../lib/sync'
+import { adoptRemoteProgress, downloadText, flushRemoteProgress, queueProgress, syncLibrary } from '../lib/sync'
+import SearchPanel from '../components/SearchPanel'
+import ResplitPanel from '../components/ResplitPanel'
 
 export default function Reader() {
   const { id } = useParams()
@@ -23,6 +25,7 @@ export default function Reader() {
   const saveTimer = useRef<number | undefined>(undefined)
   const pendingRef = useRef<{ chapter: number; ratio: number } | null>(null)
   const [leaving, setLeaving] = useState(false)
+  const [viewNonce, setViewNonce] = useState(0) 
   const switchingRef = useRef(false)
   const switchTimer = useRef<number | undefined>(undefined)
   const [note, setNote] = useState('Loading…')
@@ -55,7 +58,7 @@ export default function Reader() {
       localStorage.setItem('last-read', String(b.id))
       db.books.update(b.id, { lastReadAt: Date.now() })
       ratioRef.current = b.progress?.ratio ?? 0
-      setChapterIdx(b.progress?.chapter ?? 0)
+      setChapterIdx(Math.min(b.progress?.chapter ?? 0, Math.max(0, (b.chapters?.length ?? 1) - 1)))
       setText(t?.text ?? '')
       setBook(b)
     })()
@@ -65,12 +68,12 @@ export default function Reader() {
   // Esc closes panels; panels also close when leaving the reader
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setUI({ chaptersOpen: false, settingsOpen: false })
+      if (e.key === 'Escape') setUI({ chaptersOpen: false, settingsOpen: false, searchOpen: false, resplitOpen: false })
     }
     window.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('keydown', onKey)
-      setUI({ chaptersOpen: false, settingsOpen: false })
+      setUI({ chaptersOpen: false, settingsOpen: false, searchOpen: false, resplitOpen: false })
     }
   }, [])
 
@@ -157,12 +160,34 @@ export default function Reader() {
       setLeaving(true) // fade the old chapter out...
       switchTimer.current = window.setTimeout(() => {
         setChapterIdx(n) // ...then swap; the new view fades in on mount
+        setViewNonce((v) => v + 1)
         setLeaving(false)
         switchingRef.current = false
       }, 180)
     },
     [book, bookId],
   )
+
+  // Replace this book's chapters, keeping the exact spot you are reading
+  async function applyChapters(next: Chapter[]) {
+    const cur = book?.chapters?.[chapterIdx]
+    if (!book || !cur || !next.length) return
+    window.clearTimeout(saveTimer.current)
+    pendingRef.current = null
+    const abs = cur.start + ratioRef.current * (cur.end - cur.start) // absolute character offset
+    let ci = next.findIndex((c) => abs < c.end)
+    if (ci === -1) ci = next.length - 1
+    const c = next[ci]
+    const ratio = Math.min(1, Math.max(0, (abs - c.start) / Math.max(1, c.end - c.start)))
+    const now = Date.now()
+    const patch = { chapters: next, chaptersAt: now, progress: { chapter: ci, ratio }, progressAt: now, lastReadAt: now }
+    await db.books.update(bookId, patch)
+    ratioRef.current = ratio
+    setChapterIdx(ci)
+    setBook({ ...book, ...patch })
+    setViewNonce((v) => v + 1)
+    syncLibrary().catch(() => {}) // pushes the new chapters and position; the next sync retries on failure
+  }
 
     // Save any pending progress when leaving the page or the reader
   useEffect(() => {
@@ -214,12 +239,18 @@ export default function Reader() {
 
       <div className={`reader-view${leaving ? ' leaving' : ''}`}>
         {s.mode === 'scroll'
-          ? <ScrollView key={`s-${chapterIdx}`} {...viewProps} />
-          : <PagedView key={`p-${chapterIdx}`} {...viewProps} />}
+          ? <ScrollView key={`s-${chapterIdx}-${viewNonce}`} {...viewProps} />
+          : <PagedView key={`p-${chapterIdx}-${viewNonce}`} {...viewProps} />}
       </div>
 
       <ChapterDrawer chapters={chapters} current={chapterIdx} onSelect={(i) => goChapter(i)} />
       <SettingsPanel />
+      <SearchPanel
+        text={text}
+        chapters={chapters}
+        onJump={(i, r) => { setUI({ searchOpen: false }); goChapter(i, r) }}
+      />
+      <ResplitPanel text={text} chapterCount={chapters.length} onApply={applyChapters} />
       <ReaderDock />
     </div>
   )

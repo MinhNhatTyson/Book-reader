@@ -84,6 +84,7 @@ export default function Header() {
         {inReader && (
           <>
             <button onClick={() => setUI({ chaptersOpen: true })} aria-label="Chapters">☰<span className="hide-sm"> Chapters</span></button>
+            <button onClick={() => setUI({ searchOpen: true })} aria-label="Search">🔍<span className="hide-sm"> Search</span></button>
             <button onClick={() => setUI({ settingsOpen: true })} aria-label="Settings">Aa<span className="hide-sm"> Settings</span></button>
           </>
         )}

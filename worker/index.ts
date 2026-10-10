@@ -12,6 +12,7 @@ interface BookRow {
   created_at: number
   encoding: string | null
   chapter_count: number
+  chapters_at: number
   progress_chapter: number | null
   progress_ratio: number | null
   progress_at: number | null
@@ -20,7 +21,7 @@ interface BookRow {
 const MAX_TEXT = 24 * 1024 * 1024 // KV value limit is 25 MiB
 const MAX_CHAPTERS_JSON = 1_800_000 // D1 row limit is 2 MB
 const ID_RE = /^[A-Za-z0-9_-]{8,64}$/
-const COLS = 'id, title, size, created_at, encoding, chapter_count, progress_chapter, progress_ratio, progress_at'
+const COLS = 'id, title, size, created_at, encoding, chapter_count, chapters_at, progress_chapter, progress_ratio, progress_at'
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
@@ -32,6 +33,7 @@ const toBook = (r: BookRow) => ({
   createdAt: r.created_at,
   encoding: r.encoding,
   chapterCount: r.chapter_count,
+  chaptersAt: r.chapters_at,
   progress: r.progress_chapter === null ? null : { chapter: r.progress_chapter, ratio: r.progress_ratio ?? 0 },
   progressAt: r.progress_at,
 })
@@ -74,10 +76,19 @@ async function getChapters(env: Env, id: string) {
     : json({ error: 'not found' }, 404)
 }
 
-async function putChapters(req: Request, env: Env, id: string) {
+async function putChapters(req: Request, env: Env, id: string, at: number) {
   const body = await req.text()
   if (body.length > MAX_CHAPTERS_JSON) return json({ error: 'too many chapters' }, 413)
-  const r = await env.DB.prepare('UPDATE books SET chapters = ?1 WHERE id = ?2').bind(body, id).run()
+  let count: number
+  try {
+    const parsed: unknown = JSON.parse(body)
+    if (!Array.isArray(parsed)) return json({ error: 'bad body' }, 400)
+    count = parsed.length
+  } catch {
+    return json({ error: 'bad body' }, 400)
+  }
+  const r = await env.DB.prepare('UPDATE books SET chapters = ?1, chapter_count = ?2, chapters_at = ?3 WHERE id = ?4')
+    .bind(body, count, at, id).run()
   return r.meta.changes ? json({ ok: true }) : json({ error: 'not found' }, 404)
 }
 
@@ -139,7 +150,7 @@ export default {
         if (m === 'DELETE') return await remove(env, id)
       } else if (sub === 'chapters') {
         if (m === 'GET') return await getChapters(env, id)
-        if (m === 'PUT') return await putChapters(req, env, id)
+        if (m === 'PUT') return await putChapters(req, env, id, Number(url.searchParams.get('at')) || 0)
       } else if (sub === 'text') {
         if (m === 'GET') return await getText(env, id)
         if (m === 'PUT') return await putText(req, env, id)
