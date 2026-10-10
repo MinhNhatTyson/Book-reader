@@ -34,7 +34,13 @@ export default function Sync() {
       setLast(getLastSync())
       setStatus('Connected ✓ Your library is in sync.')
     } catch (e) {
-      setStatus(e instanceof Error && e.message === '401' ? 'Wrong token.' : 'Could not reach the server.')
+      console.error('Sync failed:', e)
+      const msg = e instanceof Error ? e.message : String(e)
+      setStatus(
+        msg.startsWith('401') ? 'Wrong token.'
+        : /^\d{3} /.test(msg) ? `Server returned an error: ${msg}`
+        : `No connection to the server: ${msg}`,
+      )
     } finally {
       setBusy(false)
     }

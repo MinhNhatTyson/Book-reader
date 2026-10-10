@@ -34,7 +34,7 @@ async function api(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers)
   headers.set('Authorization', `Bearer ${getToken()}`)
   const res = await fetch(`/api${path}`, { ...init, headers })
-  if (!res.ok) throw new Error(String(res.status))
+  if (!res.ok) throw new Error(`${res.status} ${init.method ?? 'GET'} ${path}`)
   return res
 }
 
