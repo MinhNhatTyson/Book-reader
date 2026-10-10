@@ -27,6 +27,7 @@ export default function Reader() {
   const switchTimer = useRef<number | undefined>(undefined)
   const [note, setNote] = useState('Loading…')
   const remoteIdRef = useRef<string | undefined>(undefined)
+  const barRef = useRef<HTMLDivElement>(null)
 
   // Load the book + its text once (not live, so progress saves don't reload 10 MB)
   useEffect(() => {
@@ -90,6 +91,23 @@ export default function Reader() {
 
   const chapter = book?.chapters?.[chapterIdx]
 
+  const totalChapters = book?.chapters?.length ?? 0
+
+  // Whole-book progress: finished chapters + how far into the current one
+  const paintBar = useCallback(
+    (ratio: number) => {
+      if (!barRef.current || !totalChapters) return
+      const pct = Math.min(100, ((chapterIdx + ratio) / totalChapters) * 100)
+      barRef.current.style.width = `${pct}%`
+    },
+    [chapterIdx, totalChapters],
+  )
+
+  // Initial paint after the book loads or the chapter changes
+  useEffect(() => {
+    paintBar(ratioRef.current)
+  }, [paintBar, book])
+
   // Raw chapter text -> paragraphs (one per non-empty line; content untouched)
   const paragraphs = useMemo(() => {
     if (!chapter) return []
@@ -115,11 +133,12 @@ export default function Reader() {
     (ratio: number) => {
       if (switchingRef.current) return
       ratioRef.current = ratio
+      paintBar(ratio)      
       pendingRef.current = { chapter: chapterIdx, ratio }
       window.clearTimeout(saveTimer.current)
       saveTimer.current = window.setTimeout(flushProgress, 400)
     },
-    [chapterIdx, flushProgress],
+    [chapterIdx, flushProgress, paintBar],
   )
 
   const goChapter = useCallback(
@@ -190,7 +209,7 @@ export default function Reader() {
   return (
     <div className="reader" style={style}>
       <div className="reader-progress">
-        <div style={{ width: `${((chapterIdx + 1) / chapters.length) * 100}%` }} />
+        <div ref={barRef} />
       </div>
 
       <div className={`reader-view${leaving ? ' leaving' : ''}`}>
