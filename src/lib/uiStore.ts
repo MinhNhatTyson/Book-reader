@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react'
 
-interface UI { chaptersOpen: boolean; settingsOpen: boolean; searchOpen: boolean; resplitOpen: boolean; headerHidden: boolean }
+interface UI { chaptersOpen: boolean; settingsOpen: boolean; searchOpen: boolean; resplitOpen: boolean; bookmarksOpen: boolean; headerHidden: boolean }
 
-let state: UI = { chaptersOpen: false, settingsOpen: false, searchOpen: false, resplitOpen: false, headerHidden: false }
+let state: UI = { chaptersOpen: false, settingsOpen: false, searchOpen: false, resplitOpen: false, bookmarksOpen: false, headerHidden: false }
 const listeners = new Set<() => void>()
 
 export function setUI(patch: Partial<UI>) {

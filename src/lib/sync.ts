@@ -1,4 +1,4 @@
-import { db, deleteBook, type Book, type Chapter } from './db'
+import { db, deleteBook, type Book, type Bookmark, type Chapter } from './db'
 
 const TOKEN_KEY = 'sync-token'
 const SYNC_KEY = 'last-sync'
@@ -12,6 +12,7 @@ interface RemoteBook {
   encoding: string | null
   chapterCount: number
   chaptersAt: number
+  bookmarksAt: number
   progress: { chapter: number; ratio: number } | null
   progressAt: number | null
 }
@@ -76,6 +77,9 @@ async function doUpload(localId: number) {
     }),
   })
   await api(`/books/${remoteId}/chapters?at=${b.chaptersAt ?? 0}`, { method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(b.chapters ?? []) })
+  if (b.bookmarksAt) {
+    await api(`/books/${remoteId}/bookmarks?at=${b.bookmarksAt}`, { method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(b.bookmarks ?? []) })
+  }
   await api(`/books/${remoteId}/text`, { method: 'PUT', body: await gzip(t.text) }) // last: makes the book visible
   if (b.progress) {
     await putProgress(remoteId, b.progress.chapter, b.progress.ratio, b.progressAt ?? b.lastReadAt ?? b.createdAt)
@@ -95,9 +99,11 @@ async function doSync() {
     const l = byRemote.get(r.id)
     if (!l) {
       const chapters: Chapter[] = await (await api(`/books/${r.id}/chapters`)).json()
+      const bookmarks: Bookmark[] = r.bookmarksAt ? await (await api(`/books/${r.id}/bookmarks`)).json() : []
       await db.books.add({
         title: r.title, size: r.size, createdAt: r.createdAt, encoding: r.encoding ?? undefined,
-        chapters, chaptersAt: r.chaptersAt ?? 0, progress: r.progress ?? undefined, progressAt: r.progressAt ?? undefined,
+        chapters, chaptersAt: r.chaptersAt ?? 0, bookmarks, bookmarksAt: r.bookmarksAt ?? 0,
+        progress: r.progress ?? undefined, progressAt: r.progressAt ?? undefined,
         lastReadAt: r.progressAt ?? undefined, remoteId: r.id, uploaded: true,
       })
       continue
@@ -111,6 +117,17 @@ async function doSync() {
     } else if (localAt > remoteAt && l.uploaded) {
       await api(`/books/${r.id}/chapters?at=${localAt}`, {
         method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(l.chapters ?? []),
+      })
+    }
+
+    const remoteBmAt = r.bookmarksAt ?? 0
+    const localBmAt = l.bookmarksAt ?? 0
+    if (remoteBmAt > localBmAt) {
+      const bookmarks: Bookmark[] = await (await api(`/books/${r.id}/bookmarks`)).json()
+      await db.books.update(l.id, { bookmarks, bookmarksAt: remoteBmAt })
+    } else if (localBmAt > remoteBmAt && l.uploaded) {
+      await api(`/books/${r.id}/bookmarks?at=${localBmAt}`, {
+        method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(l.bookmarks ?? []),
       })
     }
 

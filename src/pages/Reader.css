@@ -145,3 +145,19 @@ body:has(.site-header.hidden) .reader-progress { top: 0; }
 @media (max-width: 640px) {
   .drawer input[type='number'] { font-size: 16px; padding: 10px; }
 }
+
+/* Cleanup rules textarea */
+.drawer textarea {
+  padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+  font: inherit; font-size: 13px; resize: vertical;
+}
+@media (max-width: 640px) {
+  .drawer textarea { font-size: 16px; padding: 10px; }
+}
+
+/* Bookmarks drawer */
+.bm-row { display: flex; align-items: flex-start; gap: 4px; }
+.bm-row > button:first-child { flex: 1; min-width: 0; }
+.bm-del { flex: none; opacity: 0.6; min-width: 40px; }
+.bm-note { display: block; font-size: 13px; font-style: italic; margin-top: 3px; color: #e5833a; }
+.drawer a.bm-all { color: var(--muted); font-size: 13px; text-align: center; padding: 6px 0; }

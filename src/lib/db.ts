@@ -6,6 +6,14 @@ export interface Chapter {
   end: number   // character offset (exclusive)
 }
 
+export interface Bookmark {
+  id: string
+  pos: number       // absolute character offset into the book text (survives re-splitting)
+  snippet: string   // first words at that spot
+  note: string
+  createdAt: number
+}
+
 export interface Book {
   id: number
   title: string
@@ -19,6 +27,8 @@ export interface Book {
   uploaded?: boolean    // true once text + chapters are in the cloud
   progressAt?: number
   chaptersAt?: number
+  bookmarks?: Bookmark[]
+  bookmarksAt?: number
 }
 
 export interface BookText {

@@ -13,6 +13,7 @@ export default function ReaderDock() {
       <button onClick={() => setUI({ chaptersOpen: true })} aria-label="Chapters">☰</button>
       <button onClick={() => updateSettings({ theme: nextTheme })} aria-label="Switch theme">◐</button>
       <button onClick={() => setUI({ searchOpen: true })} aria-label="Search">🔍</button>
+      <button onClick={() => setUI({ bookmarksOpen: true })} aria-label="Bookmarks">🔖</button>
       <button onClick={() => setUI({ settingsOpen: true })} aria-label="Settings">Aa</button>
     </div>
   )

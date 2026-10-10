@@ -13,6 +13,7 @@ interface BookRow {
   encoding: string | null
   chapter_count: number
   chapters_at: number
+  bookmarks_at: number
   progress_chapter: number | null
   progress_ratio: number | null
   progress_at: number | null
@@ -21,7 +22,7 @@ interface BookRow {
 const MAX_TEXT = 24 * 1024 * 1024 // KV value limit is 25 MiB
 const MAX_CHAPTERS_JSON = 1_800_000 // D1 row limit is 2 MB
 const ID_RE = /^[A-Za-z0-9_-]{8,64}$/
-const COLS = 'id, title, size, created_at, encoding, chapter_count, chapters_at, progress_chapter, progress_ratio, progress_at'
+const COLS = 'id, title, size, created_at, encoding, chapter_count, chapters_at, bookmarks_at, progress_chapter, progress_ratio, progress_at'
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
@@ -34,6 +35,7 @@ const toBook = (r: BookRow) => ({
   encoding: r.encoding,
   chapterCount: r.chapter_count,
   chaptersAt: r.chapters_at,
+  bookmarksAt: r.bookmarks_at,
   progress: r.progress_chapter === null ? null : { chapter: r.progress_chapter, ratio: r.progress_ratio ?? 0 },
   progressAt: r.progress_at,
 })
@@ -89,6 +91,26 @@ async function putChapters(req: Request, env: Env, id: string, at: number) {
   }
   const r = await env.DB.prepare('UPDATE books SET chapters = ?1, chapter_count = ?2, chapters_at = ?3 WHERE id = ?4')
     .bind(body, count, at, id).run()
+  return r.meta.changes ? json({ ok: true }) : json({ error: 'not found' }, 404)
+}
+
+async function getBookmarks(env: Env, id: string) {
+  const row = await env.DB.prepare('SELECT bookmarks FROM books WHERE id = ?1').bind(id).first<{ bookmarks: string }>()
+  return row
+    ? new Response(row.bookmarks, { headers: { 'Content-Type': 'application/json' } })
+    : json({ error: 'not found' }, 404)
+}
+
+async function putBookmarks(req: Request, env: Env, id: string, at: number) {
+  const body = await req.text()
+  if (body.length > MAX_CHAPTERS_JSON) return json({ error: 'too large' }, 413)
+  try {
+    if (!Array.isArray(JSON.parse(body))) return json({ error: 'bad body' }, 400)
+  } catch {
+    return json({ error: 'bad body' }, 400)
+  }
+  const r = await env.DB.prepare('UPDATE books SET bookmarks = ?1, bookmarks_at = ?2 WHERE id = ?3')
+    .bind(body, at, id).run()
   return r.meta.changes ? json({ ok: true }) : json({ error: 'not found' }, 404)
 }
 
@@ -154,6 +176,9 @@ export default {
       } else if (sub === 'text') {
         if (m === 'GET') return await getText(env, id)
         if (m === 'PUT') return await putText(req, env, id)
+      } else if (sub === 'bookmarks') {
+        if (m === 'GET') return await getBookmarks(env, id)
+        if (m === 'PUT') return await putBookmarks(req, env, id, Number(url.searchParams.get('at')) || 0)
       } else if (sub === 'progress' && m === 'PUT') {
         return await putProgress(req, env, id)
       }

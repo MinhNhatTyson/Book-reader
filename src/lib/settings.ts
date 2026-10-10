@@ -12,6 +12,9 @@ export interface ReaderSettings {
   justify: boolean
   indent: boolean
   mode: 'scroll' | 'paged'
+  hideSeparators: boolean
+  joinWrapped: boolean
+  hideLines: string
 }
 
 export const DEFAULTS: ReaderSettings = {
@@ -24,6 +27,9 @@ export const DEFAULTS: ReaderSettings = {
   justify: false,
   indent: false,
   mode: 'scroll',
+  hideSeparators: false,
+  joinWrapped: false,
+  hideLines: '',
 }
 
 export const THEMES: Record<ThemeName, { bg: string; fg: string; panel: string; muted: string; border: string }> = {

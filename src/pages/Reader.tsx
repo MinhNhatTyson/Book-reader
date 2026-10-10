@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
-import { db, type Book, type Chapter } from '../lib/db'
+import { db, type Book, type Bookmark, type Chapter } from '../lib/db'
 import { THEMES, useSettings } from '../lib/settings'
 import { setUI } from '../lib/uiStore'
 import ChapterDrawer from '../components/ChapterDrawer'
@@ -12,6 +12,9 @@ import ReaderDock from '../components/ReaderDock'
 import { adoptRemoteProgress, downloadText, flushRemoteProgress, queueProgress, syncLibrary } from '../lib/sync'
 import SearchPanel from '../components/SearchPanel'
 import ResplitPanel from '../components/ResplitPanel'
+import { cleanParagraphs } from '../lib/cleanup'
+import { locate, makeSnippet, newBookmarkId } from '../lib/bookmarks'
+import BookmarkPanel from '../components/BookmarkPanel'
 
 export default function Reader() {
   const { id } = useParams()
@@ -57,8 +60,17 @@ export default function Reader() {
 
       localStorage.setItem('last-read', String(b.id))
       db.books.update(b.id, { lastReadAt: Date.now() })
-      ratioRef.current = b.progress?.ratio ?? 0
-      setChapterIdx(Math.min(b.progress?.chapter ?? 0, Math.max(0, (b.chapters?.length ?? 1) - 1)))
+      let startChapter = Math.min(b.progress?.chapter ?? 0, Math.max(0, (b.chapters?.length ?? 1) - 1))
+      let startRatio = b.progress?.ratio ?? 0
+      const jumpPos = Number(new URLSearchParams(location.search).get('pos') ?? NaN) // from /bookmarks
+      if (Number.isFinite(jumpPos) && b.chapters?.length) {
+        const at = locate(b.chapters, jumpPos)
+        startChapter = at.chapter
+        startRatio = at.ratio
+        history.replaceState(null, '', location.pathname) // so a refresh doesn't jump again
+      }
+      ratioRef.current = startRatio
+      setChapterIdx(startChapter)
       setText(t?.text ?? '')
       setBook(b)
     })()
@@ -68,12 +80,12 @@ export default function Reader() {
   // Esc closes panels; panels also close when leaving the reader
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setUI({ chaptersOpen: false, settingsOpen: false, searchOpen: false, resplitOpen: false })
+      if (e.key === 'Escape') setUI({ chaptersOpen: false, settingsOpen: false, searchOpen: false, resplitOpen: false, bookmarksOpen: false })
     }
     window.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('keydown', onKey)
-      setUI({ chaptersOpen: false, settingsOpen: false, searchOpen: false, resplitOpen: false })
+      setUI({ chaptersOpen: false, settingsOpen: false, searchOpen: false, resplitOpen: false, bookmarksOpen: false })
     }
   }, [])
 
@@ -111,7 +123,7 @@ export default function Reader() {
     paintBar(ratioRef.current)
   }, [paintBar, book])
 
-  // Raw chapter text -> paragraphs (one per non-empty line; content untouched)
+  // Raw chapter text -> paragraphs (one per non-empty line; stored text is never modified)
   const paragraphs = useMemo(() => {
     if (!chapter) return []
     const lines = text
@@ -119,8 +131,13 @@ export default function Reader() {
       .split(/\r?\n/)
       .map((l) => l.trim())
       .filter(Boolean)
-    return lines[0] === chapter.title ? lines.slice(1) : lines
-  }, [text, chapter])
+    const body = lines[0] === chapter.title ? lines.slice(1) : lines
+    return cleanParagraphs(body, {
+      hideSeparators: s.hideSeparators,
+      joinWrapped: s.joinWrapped,
+      hideLines: s.hideLines,
+    })
+  }, [text, chapter, s.hideSeparators, s.joinWrapped, s.hideLines])
 
   const flushProgress = useCallback(() => {
     window.clearTimeout(saveTimer.current)
@@ -189,6 +206,27 @@ export default function Reader() {
     syncLibrary().catch(() => {}) // pushes the new chapters and position; the next sync retries on failure
   }
 
+  async function saveBookmarks(next: Bookmark[]) {
+    const patch = { bookmarks: next, bookmarksAt: Date.now() }
+    await db.books.update(bookId, patch)
+    setBook((b) => (b ? { ...b, ...patch } : b))
+    syncLibrary().catch(() => {}) // the next sync retries on failure
+  }
+
+  async function addBookmark(note: string) {
+    const cur = book?.chapters?.[chapterIdx]
+    if (!book || !cur) return
+    const raw = Math.floor(cur.start + ratioRef.current * (cur.end - cur.start))
+    const pos = Math.max(cur.start, text.lastIndexOf('\n', raw) + 1) // snap to the start of the paragraph
+    const bm: Bookmark = { id: newBookmarkId(), pos, snippet: makeSnippet(text, pos), note: note.trim(), createdAt: Date.now() }
+    await saveBookmarks([...(book.bookmarks ?? []), bm])
+  }
+
+  async function removeBookmark(id: string) {
+    if (!book) return
+    await saveBookmarks((book.bookmarks ?? []).filter((m) => m.id !== id))
+  }
+
     // Save any pending progress when leaving the page or the reader
   useEffect(() => {
     const onLeave = () => { flushProgress(); flushRemoteProgress() }
@@ -251,6 +289,17 @@ export default function Reader() {
         onJump={(i, r) => { setUI({ searchOpen: false }); goChapter(i, r) }}
       />
       <ResplitPanel text={text} chapterCount={chapters.length} onApply={applyChapters} />
+      <BookmarkPanel
+        bookmarks={book.bookmarks ?? []}
+        chapters={chapters}
+        onAdd={addBookmark}
+        onRemove={removeBookmark}
+        onJump={(pos) => {
+          setUI({ bookmarksOpen: false })
+          const at = locate(chapters, pos)
+          goChapter(at.chapter, at.ratio)
+        }}
+      />
       <ReaderDock />
     </div>
   )

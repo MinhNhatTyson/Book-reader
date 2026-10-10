@@ -31,6 +31,20 @@ export default function SettingsPanel() {
       <aside className="drawer right">
         <h3>Reading settings</h3>
 
+        <div className="row"><span>Cleanup (display only)</span></div>
+        <label className="row"><span><input type="checkbox" checked={s.hideSeparators} onChange={(e) => updateSettings({ hideSeparators: e.target.checked })} /> Hide divider lines (----, ====)</span></label>
+        <label className="row"><span><input type="checkbox" checked={s.joinWrapped} onChange={(e) => updateSettings({ joinWrapped: e.target.checked })} /> Join hard-wrapped lines</span></label>
+        <label className="row">
+          <span>Hide lines containing (one rule per line)</span>
+          <textarea
+            rows={4}
+            spellCheck={false}
+            value={s.hideLines}
+            placeholder={'truyenfull.vn\nre:^Nguồn:'}
+            onChange={(e) => updateSettings({ hideLines: e.target.value })}
+          />
+        </label>
+
         <div className="row"><span>Theme</span></div>
         <div className="theme-row">
           {(Object.keys(THEMES) as ThemeName[]).map((name) => (

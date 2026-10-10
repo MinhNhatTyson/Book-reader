@@ -80,11 +80,17 @@ export default function Header() {
             {l.label}
           </NavLink>
         ))}
+        {!inReader && (
+          <NavLink to="/bookmarks" className={({ isActive }) => (isActive ? 'active' : '')}>
+            🔖<span className="hide-sm"> Bookmarks</span>
+          </NavLink>
+        )}
         {lastRead && !inReader && <NavLink to={`/read/${lastRead}`}>Continue<span className="hide-sm"> reading</span></NavLink>}
         {inReader && (
           <>
             <button onClick={() => setUI({ chaptersOpen: true })} aria-label="Chapters">☰<span className="hide-sm"> Chapters</span></button>
             <button onClick={() => setUI({ searchOpen: true })} aria-label="Search">🔍<span className="hide-sm"> Search</span></button>
+            <button onClick={() => setUI({ bookmarksOpen: true })} aria-label="Bookmarks">🔖<span className="hide-sm"> Bookmarks</span></button>
             <button onClick={() => setUI({ settingsOpen: true })} aria-label="Settings">Aa<span className="hide-sm"> Settings</span></button>
           </>
         )}
