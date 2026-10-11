@@ -1,0 +1,31 @@
+.page.data { max-width: 760px; }
+.data h1 { margin: 8px 0 20px; }
+
+.data-card {
+  border: 1px solid #d9d2c0; border-radius: 8px; background: #fff;
+  padding: 14px 16px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 6px;
+}
+.data-bar { height: 6px; border-radius: 3px; background: #ddd5bf; overflow: hidden; }
+.data-bar > div { height: 100%; background: #e5833a; }
+.data-muted { color: #777; font-size: 13px; line-height: 1.5; }
+.data-error { color: #b3261e; }
+
+.data-row {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 0; border-top: 1px solid #e4dcc6;
+}
+.data-info { flex: 1; min-width: 0; }
+.data-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.data-btn {
+  padding: 8px 14px; border-radius: 8px; border: 0; cursor: pointer;
+  background: #e5833a; color: #fff; font: inherit; font-size: 14px;
+}
+.data-btn.secondary { background: none; border: 1px solid #c9bfa5; color: inherit; }
+.data-btn:disabled { opacity: 0.5; cursor: default; }
+.data-link { background: none; border: 0; padding: 0; color: #e5833a; font: inherit; cursor: pointer; text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .data h1 { font-size: 24px; margin: 4px 0 14px; }
+  .data-btn { min-height: 44px; }
+}

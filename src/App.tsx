@@ -4,6 +4,7 @@ import Library from './pages/Library'
 import Reader from './pages/Reader'
 import Sync from './pages/Sync'
 import Bookmarks from './pages/Bookmarks'
+import Data from './pages/Data'
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/sync" element={<Sync />} />
         <Route path="/read/:id" element={<Reader />} />
         <Route path="/bookmarks" element={<Bookmarks />} />
+        <Route path="/data" element={<Data />} />
       </Routes>
     </>
   )

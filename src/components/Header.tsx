@@ -85,6 +85,11 @@ export default function Header() {
             🔖<span className="hide-sm"> Bookmarks</span>
           </NavLink>
         )}
+        {!inReader && (
+          <NavLink to="/data" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Data
+          </NavLink>
+        )}
         {lastRead && !inReader && <NavLink to={`/read/${lastRead}`}>Continue<span className="hide-sm"> reading</span></NavLink>}
         {inReader && (
           <>
