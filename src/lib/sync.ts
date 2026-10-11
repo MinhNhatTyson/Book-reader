@@ -168,7 +168,16 @@ export async function downloadText(localId: number) {
   const b = await db.books.get(localId)
   if (!b?.remoteId) throw new Error('not synced')
   const res = await api(`/books/${b.remoteId}/text`)
-  await db.texts.put({ id: localId, text: await res.text() })
+  const buf = new Uint8Array(await res.arrayBuffer())
+  let text: string
+  if (buf[0] === 0x1f && buf[1] === 0x8b) {
+    // Still gzipped (the browser did not decompress it): decompress manually
+    const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))
+    text = await new Response(stream).text()
+  } else {
+    text = new TextDecoder('utf-8').decode(buf)
+  }
+  await db.texts.put({ id: localId, text })
 }
 
 // If another device has a newer reading position, adopt it (waits at most 2 s)
